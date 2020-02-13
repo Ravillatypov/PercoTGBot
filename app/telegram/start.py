@@ -1,11 +1,12 @@
-from app.settings import dp, ADMIN_USERNAME
-from aiogram.types import Message
-from aiogram.types.reply_keyboard import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.types.inline_keyboard import InlineKeyboardMarkup, InlineKeyboardButton
-from app.models import User
-from app.telegram.states import AuthenticateForm
-from app.helpers import get_phone
 from aiogram.dispatcher import FSMContext
+from aiogram.types import Message, ContentType
+from aiogram.types.inline_keyboard import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types.reply_keyboard import ReplyKeyboardMarkup, KeyboardButton
+
+from app.helpers import get_phone
+from app.models import User
+from app.settings import dp, ADMIN_USERNAME
+from app.telegram.states import AuthenticateForm
 
 
 @dp.message_handler(commands=['start', 'login'])
@@ -44,7 +45,7 @@ async def groups(message: Message):
     )
 
 
-@dp.message_handler(state=AuthenticateForm.phone)
+@dp.message_handler(state=AuthenticateForm.phone, content_types=ContentType.CONTACT)
 async def login(message: Message, state: FSMContext):
     if message.contact:
         phone = get_phone(message.contact.phone_number)
