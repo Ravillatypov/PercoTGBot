@@ -17,6 +17,10 @@ DB_DSN = env.str('DB_DSN', default='sqlite:///db/sqlite.db')
 API_TOKEN = env.str('API_TOKEN')
 PROXY_URL = env.str('PROXY_URL', default='')
 
+PERCO_URL = env.str('PERCO_URL', default='')
+PERCO_LOGIN = env.str('PERCO_LOGIN', default='')
+PERCO_PASS = env.str('PERCO_PASS', default='')
+
 # logging settings
 LOG_LEVEL = env.str('LOG_LEVEL', default='WARNING')
 
