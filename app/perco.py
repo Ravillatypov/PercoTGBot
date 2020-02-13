@@ -1,3 +1,5 @@
+from typing import List, Dict
+
 import aiohttp
 
 from app.settings import PERCO_LOGIN, PERCO_PASS, PERCO_URL, logger
@@ -23,7 +25,6 @@ class PercoClient:
     async def _change_device_state(self, door_id: int, state_id: int):
         async with self.session as sess:
             resp = await sess.post(f'{PERCO_URL}/controlaccess/devicemanagement', data={
-                'clientId': '949204',
                 'command[0][type]': '0',
                 'command[0][plc]': f'{door_id}',
                 'command[0][number]': '1',
@@ -33,3 +34,12 @@ class PercoClient:
 
     async def close_door(self, door_id: int):
         await self._change_device_state(door_id, 1)
+
+    async def get_doors(self) -> List[Dict[str, str]]:
+        async with self.session as sess:
+            resp = await sess.post(
+                f'{PERCO_URL}/site/GetData',
+                data={'type': 'plc', 'listType': 'list', 'showall': 'true'}
+            )
+            logger.info(f'login status: {resp.status}')
+            return await resp.json()
