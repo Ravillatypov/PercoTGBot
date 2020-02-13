@@ -1,5 +1,8 @@
 FROM python:3.8-alpine
 
+RUN mkdir /db
+VOLUME /db
+
 COPY requirements.txt ./
 
 RUN apk add --update --no-cache --virtual .tmp-build-deps build-base python3-dev && \
