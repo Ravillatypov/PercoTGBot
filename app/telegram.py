@@ -17,9 +17,9 @@ async def start(message: Message):
     user, created = await User.get_or_create(
         chat_id=message.chat.id,
         defaults={
-            'username': message.chat.username,
-            'first_name': message.chat.first_name,
-            'last_name': message.chat.last_name,
+            'username': message.chat.username or '',
+            'first_name': message.chat.first_name or '',
+            'last_name': message.chat.last_name or '',
             'is_active': message.chat.username == ADMIN_USERNAME or None
         }
     )
