@@ -1,6 +1,7 @@
 from aiogram.types import Message
 
-from app.models import User
+from app.models import User, Door
+from app.perco import PercoClient
 from app.settings import dp, ADMIN_USERNAME
 
 
@@ -22,3 +23,14 @@ async def start(message: Message):
     else:
         msg += 'После подверждения учетной записи администратором я вас проинформирую'
     await message.reply(msg)
+
+
+@dp.message_handler(commands=['/updateDoors'])
+async def update_doors(message: Message):
+    if message.chat.username != ADMIN_USERNAME:
+        return await message.reply('У вас не достаточно прав для данной операции')
+    perco = PercoClient()
+    await perco.login()
+    doors = await perco.get_doors()
+    for data in doors:
+        await Door.get_or_create(id=data.get('id', 0), name=data.get('name', '-'))
