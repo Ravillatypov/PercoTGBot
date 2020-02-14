@@ -9,6 +9,7 @@ if isfile('.env'):
     env.read_envfile('.env')
 
 ADMIN_USERNAME = env.str('ADMIN_USERNAME')
+ADMIN_CHAT_ID = env.int('ADMIN_CHAT_ID', default=0)
 
 DB_DSN = env.str('DB_DSN', default='sqlite:///db/sqlite.db')
 
