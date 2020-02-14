@@ -46,7 +46,10 @@ async def get_user_available_doors_markup(chat_id: int, user: User = None) -> Un
         user = await User.get(chat_id=chat_id)
     if not user:
         return None
-    doors = await user.doors.all()
+    if user.is_admin:
+        doors = await Door.all()
+    else:
+        doors = await user.doors.all()
     if not doors:
         return None
     markup = InlineKeyboardMarkup(row_width=1)
@@ -69,10 +72,14 @@ async def get_users_markup() -> Union[InlineKeyboardMarkup, None]:
     if not users:
         return None
     markup = InlineKeyboardMarkup(row_width=1)
+    users_count = 0
     for user in users:
+        if user.is_admin:
+            continue
         markup.add(InlineKeyboardButton(user.full_name, callback_data=f'user_edit_{user.chat_id}'))
+        users_count += 1
     markup.add(InlineKeyboardButton('Отмена', callback_data=f'cancel'))
-    return markup
+    return markup if users_count else None
 
 
 async def send_user_edit_message(user: User, admin_chat_id: int, is_new=False):
@@ -83,9 +90,10 @@ async def send_user_edit_message(user: User, admin_chat_id: int, is_new=False):
     msg = ''
     if is_new:
         msg = 'Новый пользователь: '
+    username = f' - @{user.username}' if user.username else ''
     await bot.send_message(
         admin_chat_id,
-        f'{msg}{user.full_name} - @{user.username}\n',
+        f'{msg}{user.full_name} {username}\n',
         reply_markup=markup
     )
 

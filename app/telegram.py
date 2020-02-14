@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from aiogram.types import Message, CallbackQuery
 
 from app import settings
@@ -106,7 +108,9 @@ async def callback_user_door_edit(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     if 'finished' in callback_query.data:
         chat_id = int(callback_query.data.replace('user_door_finished_', ''))
-        await bot.send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
+        user = await User.get_or_none(chat_id=chat_id)
+        if user and user.updated_at and datetime.now() - user.updated_at < timedelta(minutes=5):
+            await bot.send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
         await send_available_doors(chat_id)
         return await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
     chat_id, door_id, state = callback_query.data.replace('user_door_', '').split('_')
