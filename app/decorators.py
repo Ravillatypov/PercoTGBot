@@ -1,6 +1,6 @@
 from aiogram.types import Message, CallbackQuery
 
-from app.settings import ADMIN_USERNAME, bot, logger
+from app.settings import ADMIN_USERNAME, logger
 
 
 def admin(func):

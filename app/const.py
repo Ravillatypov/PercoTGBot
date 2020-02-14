@@ -1,2 +1,2 @@
 SELECTED_LABEL = '[✔️]'
-NOT_SELECTED_LABEL = '[ ]'
+NOT_SELECTED_LABEL = '[   ]'

@@ -1,12 +1,12 @@
 import re
 from typing import Union
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from app import settings
 from app.const import SELECTED_LABEL, NOT_SELECTED_LABEL
 from app.models import User, Door
 from app.settings import bot
-from app import settings
 
 
 def get_phone(text: str) -> str:
@@ -31,11 +31,11 @@ async def get_user_doors_markup(chat_id: int, user: User = None) -> InlineKeyboa
             callback_data=f'user_door_{user.chat_id}_{door.id}_{marker}'
         ))
     markup.add(InlineKeyboardButton(
-        'Сохранить',
+        'Сохранить и отправить уведомление',
         callback_data=f'user_door_finished_{user.chat_id}'
     ))
     markup.add(InlineKeyboardButton(
-        'Отмена',
+        'Сохранить',
         callback_data='cancel'
     ))
     return markup

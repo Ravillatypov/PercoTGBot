@@ -1,7 +1,6 @@
-from aiogram.types import Message, InlineKeyboardButton, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 
 from app import settings
-from app.const import SELECTED_LABEL, NOT_SELECTED_LABEL
 from app.decorators import admin
 from app.helpers import (get_user_doors_markup, send_available_doors, get_users_markup, send_user_edit_message,
                          check_admin_user)
