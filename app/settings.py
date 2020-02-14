@@ -8,8 +8,6 @@ from envparse import env
 if isfile('.env'):
     env.read_envfile('.env')
 
-ADMIN_PHONES = env.list('ADMIN_PHONES', default=[])
-ADMIN_CODE = env.str('ADMIN_CODE')
 ADMIN_USERNAME = env.str('ADMIN_USERNAME')
 
 DB_DSN = env.str('DB_DSN', default='sqlite:///db/sqlite.db')
