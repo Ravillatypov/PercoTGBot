@@ -1,5 +1,5 @@
 import re
-from typing import Union
+from typing import Union, List, Tuple
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -41,30 +41,31 @@ async def get_user_doors_markup(chat_id: int, user: User = None) -> InlineKeyboa
     return markup
 
 
-async def get_user_available_doors_markup(chat_id: int, user: User = None) -> Union[InlineKeyboardMarkup, None]:
+async def get_user_available_doors_markup(chat_id: int, user: User = None) -> List[Tuple[str, InlineKeyboardMarkup]]:
     if not user:
         user = await User.get(chat_id=chat_id)
     if not user:
-        return None
+        return []
     if user.is_admin:
         doors = await Door.all()
     else:
         doors = await user.doors.all()
-    if not doors:
-        return None
-    markup = InlineKeyboardMarkup(row_width=1)
+    result = []
     for door in doors:
-        markup.add(InlineKeyboardButton(f'Открыть "{door.name}"', callback_data=f'door_open_{door.id}'))
-        markup.add(InlineKeyboardButton(f'Закрыть "{door.name}"', callback_data=f'door_close_{door.id}'))
-    return markup
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton('Открыть', callback_data=f'door_open_{door.id}'))
+        markup.add(InlineKeyboardButton('Пропустить', callback_data=f'door_skip_{door.id}'))
+        markup.add(InlineKeyboardButton('Закрыть', callback_data=f'door_close_{door.id}'))
+        result.append((f'{door.name}', markup))
+    return result
 
 
 async def send_available_doors(chat_id: int):
-    markup = await get_user_available_doors_markup(chat_id)
-    if markup is None:
+    messages = await get_user_available_doors_markup(chat_id)
+    if not messages:
         await bot.send_message(chat_id, 'Извините, у вас нет прав на управление дверьми')
-    else:
-        await bot.send_message(chat_id, 'Доступные двери:', reply_markup=markup)
+    for msg, markup in messages:
+        await bot.send_message(chat_id, msg, reply_markup=markup)
 
 
 async def get_users_markup() -> Union[InlineKeyboardMarkup, None]:
