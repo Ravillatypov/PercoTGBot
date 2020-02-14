@@ -21,6 +21,7 @@ PERCO_PASS = env.str('PERCO_PASS', default='')
 
 # logging settings
 LOG_LEVEL = env.str('LOG_LEVEL', default='WARNING')
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.WARNING))
 
 formatter = logging.Formatter('{"time": "%(asctime)s", "level": "%(levelname)s", "file": "%(filename)s", '
                               '"function": "%(funcName)s", "message": "%(message)s"}')

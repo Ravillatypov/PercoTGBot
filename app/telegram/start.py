@@ -30,14 +30,13 @@ async def update_doors(message: Message):
     if message.chat.username != ADMIN_USERNAME:
         return await message.reply('У вас не достаточно прав для данной операции')
     perco = PercoClient()
-    await perco.login()
     doors = await perco.get_doors()
     for data in doors:
-        await Door.get_or_create(id=data.get('id', 0), name=data.get('name', '-'))
+        await Door.get_or_create(id=data.get('id', 0), defaults={'name': data.get('name', '-')})
 
 
 @dp.message_handler(commands=['getDoors'])
 async def get_doors(message: Message):
     if message.chat.username == ADMIN_USERNAME:
         doors = await Door.all()
-        await message.reply(', '.join((i.name for i in doors)))
+        await message.reply(f'количество дверей {len(doors)}: ' + ', '.join((i.name for i in doors)))
