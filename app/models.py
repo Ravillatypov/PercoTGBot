@@ -1,6 +1,6 @@
 from tortoise import models, fields
 
-from app.settings import ADMIN_PHONES
+from app.settings import ADMIN_USERNAME
 
 
 class TimestampModel(models.Model):
@@ -23,24 +23,18 @@ class Door(TimestampModel):
     name = fields.CharField(max_length=100)
 
 
-class Group(TimestampModel):
-    doors = fields.ManyToManyField('models.Door', related_name='groups')
-    name = fields.CharField(max_length=100, unique=True)
-
-
 class User(TimestampModel):
-    chat_id = fields.BigIntField(null=True)
-    phone = fields.CharField(max_length=12)
-    code = fields.CharField(max_length=10)
-    name = fields.CharField(max_length=100)
-    group = fields.ForeignKeyField('models.Group', related_name='users')
+    chat_id = fields.BigIntField(pk=True)
+    username = fields.CharField(max_length=100, index=True)
+    first_name = fields.CharField(max_length=100)
+    last_name = fields.CharField(max_length=100)
+    is_active = fields.BooleanField(null=True)
+    doors = fields.ManyToManyField('models.Door', related_name='users')
 
     @property
     def is_admin(self) -> bool:
-        return self.phone in ADMIN_PHONES
+        return self.username == ADMIN_USERNAME
 
     @property
-    def doors(self):
-        if self.is_admin:
-            return Door.all()
-        return self.group.doors.all()
+    def full_name(self) -> str:
+        return f'{self.first_name} {self.last_name}'
