@@ -32,7 +32,7 @@ async def start(message: Message):
     if message.chat.username == ADMIN_USERNAME:
         msg += 'Вы администратор, поздавляю!'
     else:
-        msg += 'После подверждения учетной записи администратором, я вас проинформирую'
+        msg += 'Ваш запрос ожидает подтверждения администратором.'
         if settings.ADMIN_CHAT_ID:
             await send_user_edit_message(user, settings.ADMIN_CHAT_ID, is_new=True)
     await message.reply(msg)
@@ -70,7 +70,7 @@ async def callback_door_open(callback_query: CallbackQuery):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_open_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь открыта')
+    await bot.answer_callback_query(callback_query.id, 'Дверь открыта', show_alert=True)
 
 
 @dp.callback_query_handler(lambda x: 'door_close_' in x.data)
@@ -78,7 +78,7 @@ async def callback_door_close(callback_query: CallbackQuery):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_close_', ''))
     await perco.close_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта')
+    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта', show_alert=True)
 
 
 @dp.callback_query_handler(lambda x: 'door_skip_' in x.data)
@@ -86,10 +86,17 @@ async def callback_door_skip(callback_query: CallbackQuery):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_skip_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь открыта')
+    await bot.answer_callback_query(callback_query.id, 'Дверь открыта', show_alert=True)
     await sleep(8)
     await perco.close_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта')
+    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта', show_alert=True)
+
+
+@dp.callback_query_handler(lambda x: 'doors_refresh' == x.data)
+async def callback_doors_refresh(callback_query: CallbackQuery):
+    logger.info(f'callback data: {callback_query.data}')
+    states = await perco.get_doors_labels()
+    await bot.answer_callback_query(callback_query.id, 'данные обновлены', show_alert=True)
 
 
 @dp.callback_query_handler(lambda x: 'user_activate_' in x.data)

@@ -4,7 +4,7 @@ from typing import Union, List, Tuple
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from app import settings
-from app.const import SELECTED_LABEL, NOT_SELECTED_LABEL
+from app.const import SELECTED, NOT_SELECTED, OPEN, CLOSE, SKIP
 from app.models import User, Door
 from app.settings import bot
 
@@ -25,7 +25,7 @@ async def get_user_doors_markup(chat_id: int, user: User = None) -> InlineKeyboa
     doors = await Door.all()
     for door in doors:
         marker = 0 if door.id in user_doors_ids else 1
-        label = NOT_SELECTED_LABEL if marker else SELECTED_LABEL
+        label = NOT_SELECTED if marker else SELECTED
         markup.add(InlineKeyboardButton(
             f'{label} {door.name}',
             callback_data=f'user_door_{user.chat_id}_{door.id}_{marker}'
@@ -41,9 +41,11 @@ async def get_user_doors_markup(chat_id: int, user: User = None) -> InlineKeyboa
     return markup
 
 
-async def get_user_available_doors_markup(chat_id: int, user: User = None) -> List[Tuple[str, InlineKeyboardMarkup]]:
+async def get_user_available_doors_markup(chat_id: int, user: User = None, states: dict = None) -> list:
     if not user:
         user = await User.get(chat_id=chat_id)
+    if not states:
+        states = {}
     if not user:
         return []
     if user.is_admin:
@@ -52,16 +54,19 @@ async def get_user_available_doors_markup(chat_id: int, user: User = None) -> Li
         doors = await user.doors.all()
     result = []
     for door in doors:
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton('Открыть', callback_data=f'door_open_{door.id}'))
-        markup.add(InlineKeyboardButton('Пропустить', callback_data=f'door_skip_{door.id}'))
-        markup.add(InlineKeyboardButton('Закрыть', callback_data=f'door_close_{door.id}'))
-        result.append((f'{door.name}', markup))
+        markup = InlineKeyboardMarkup(row_width=4)
+        door_name = f'{states.get(door.id, "")}{door.name}'
+        markup.add(
+            InlineKeyboardButton('Открыть', callback_data=f'door_open_{door.id}'),
+            InlineKeyboardButton('Закрыть', callback_data=f'door_close_{door.id}'),
+            InlineKeyboardButton('Пропустить', callback_data=f'door_skip_{door.id}'),
+        )
+        result.append((door_name, markup))
     return result
 
 
-async def send_available_doors(chat_id: int):
-    messages = await get_user_available_doors_markup(chat_id)
+async def send_available_doors(chat_id: int, states=None):
+    messages = await get_user_available_doors_markup(chat_id, states=states)
     if not messages:
         await bot.send_message(chat_id, 'Извините, у вас нет прав на управление дверьми')
     for msg, markup in messages:

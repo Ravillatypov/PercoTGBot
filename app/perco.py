@@ -1,5 +1,7 @@
 import json
 from typing import List, Dict, Union
+from datetime import datetime, timedelta
+from app.const import OPENED, CLOSED
 
 import aiohttp
 
@@ -7,6 +9,10 @@ from app.settings import PERCO_LOGIN, PERCO_PASS, PERCO_URL, logger
 
 
 class PercoClient:
+    def __init__(self):
+        self._states: Dict[int, str] = {}
+        self._updated_timestamp: int = 0
+
     @staticmethod
     async def _call(uri: str, data: dict) -> Union[list, dict, str]:
         async with aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True)) as session:
@@ -46,3 +52,16 @@ class PercoClient:
             '/site/GetData',
             {'type': 'plc', 'listType': 'list', 'showall': 'true'}
         )
+
+    async def _update_states(self):
+        states = await self._call('/js/deviceState.json.php', data={'request': 'getDeviceStateAll'})
+        result = {}
+        for item in states.get('statuses', {}).values():
+            result[int(item['id'])] = OPENED if item['reader_rkd1'] == '1' else CLOSED
+        self._states = result
+        self._updated_timestamp = datetime.now().timestamp()
+
+    async def get_doors_labels(self) -> Dict[int, str]:
+        if datetime.now().timestamp() - self._updated_timestamp > 60:
+            await self._update_states()
+        return self._states
