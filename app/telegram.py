@@ -68,7 +68,7 @@ async def callback_door_open(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_open_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь открыта', show_alert=True)
+    await bot.answer_callback_query(callback_query.id, 'Дверь открыта')
 
 
 @dp.callback_query_handler(lambda x: 'door_close_' in x.data)
@@ -77,7 +77,7 @@ async def callback_door_close(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_close_', ''))
     await perco.close_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта', show_alert=True)
+    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта')
 
 
 @dp.callback_query_handler(lambda x: 'door_skip_' in x.data)
@@ -86,11 +86,7 @@ async def callback_door_skip(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_skip_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(
-        callback_query.id,
-        'Дверь открыта, через 8 сек закроется автоматически',
-        show_alert=True
-    )
+    await bot.answer_callback_query(callback_query.id, 'Дверь открыта, через 8 сек закроется автоматически')
     await sleep(8)
     await perco.close_door(door_id)
 
