@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from aiogram.types import Message, CallbackQuery
 
 from app import settings
-from app.decorators import admin
+from app.decorators import admin, check_permission
 from app.helpers import (get_user_doors_markup, send_available_doors, get_users_markup, send_user_edit_message,
                          check_admin_user)
 from app.models import User, Door
@@ -63,7 +63,8 @@ async def get_users(message: Message, **kwargs):
 
 
 @dp.callback_query_handler(lambda x: 'door_open_' in x.data)
-async def callback_door_open(callback_query: CallbackQuery):
+@check_permission
+async def callback_door_open(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_open_', ''))
     await perco.open_door(door_id)
@@ -71,7 +72,8 @@ async def callback_door_open(callback_query: CallbackQuery):
 
 
 @dp.callback_query_handler(lambda x: 'door_close_' in x.data)
-async def callback_door_close(callback_query: CallbackQuery):
+@check_permission
+async def callback_door_close(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_close_', ''))
     await perco.close_door(door_id)
@@ -79,7 +81,8 @@ async def callback_door_close(callback_query: CallbackQuery):
 
 
 @dp.callback_query_handler(lambda x: 'door_skip_' in x.data)
-async def callback_door_skip(callback_query: CallbackQuery):
+@check_permission
+async def callback_door_skip(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_skip_', ''))
     await perco.open_door(door_id)
@@ -147,7 +150,8 @@ async def callback_cancel(callback_query: CallbackQuery):
 
 
 @dp.callback_query_handler(lambda x: 'user_edit_' in x.data)
-async def callback_user_edit(callback_query: CallbackQuery):
+@admin
+async def callback_user_edit(callback_query: CallbackQuery, **kwargs):
     await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
     chat_id = int(callback_query.data.replace('user_edit_', ''))
     user = await User.get(chat_id=chat_id)
