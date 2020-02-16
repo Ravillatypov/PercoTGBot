@@ -14,6 +14,7 @@ class PercoClient:
         self.password = password
         self._cookies = aiohttp.CookieJar(unsafe=True)
         self._states: Dict[int, str] = {}
+        self.last_updated = []
 
     async def auth(self):
         async with aiohttp.ClientSession(cookie_jar=self._cookies) as session:
@@ -61,6 +62,7 @@ class PercoClient:
         result = {}
         for item in states.get('status', {}).values():
             result[int(item['id'])] = CLOSED if item['reader_rkd1'] == '1' else OPENED
+        self.last_updated = [k for k, v in result.items() if self._states.get(k, '') != v]
         self._states = result
 
     @property
@@ -71,4 +73,4 @@ class PercoClient:
         await self.auth()
         while True:
             await self._update_states()
-            await sleep(3)
+            await sleep(1)
