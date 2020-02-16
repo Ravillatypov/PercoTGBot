@@ -1,20 +1,13 @@
-import re
-from typing import Union, List, Tuple
+from typing import Union
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from app import settings
-from app.const import SELECTED, NOT_SELECTED, OPEN, CLOSE, SKIP
-from app.models import User, Door
-from app.settings import bot
+from app.const import SELECTED, NOT_SELECTED
+from app.models import User, Door, DoorMessage
+from app.settings import bot, perco
 
-
-def get_phone(text: str) -> str:
-    text = text.replace(' ', '').replace('-', '')
-    g = re.search(r'\d{10}', text)
-    if g is None:
-        return ''
-    return '7' + g.group()
+_last_state_cache = {}
 
 
 async def get_user_doors_markup(chat_id: int, user: User = None) -> InlineKeyboardMarkup:
@@ -41,11 +34,9 @@ async def get_user_doors_markup(chat_id: int, user: User = None) -> InlineKeyboa
     return markup
 
 
-async def get_user_available_doors_markup(chat_id: int, user: User = None, states: dict = None) -> list:
+async def get_user_available_doors_markup(chat_id: int, user: User = None) -> list:
     if not user:
-        user = await User.get(chat_id=chat_id)
-    if not states:
-        states = {}
+        user = await User.get_or_none(chat_id=chat_id)
     if not user:
         return []
     if user.is_admin:
@@ -55,22 +46,38 @@ async def get_user_available_doors_markup(chat_id: int, user: User = None, state
     result = []
     for door in doors:
         markup = InlineKeyboardMarkup(row_width=4)
-        door_name = f'{states.get(door.id, "")}{door.name}'
+        door_name = f'{perco.door_states.get(door.id, "")} {door.name}'
         markup.add(
             InlineKeyboardButton('Открыть', callback_data=f'door_open_{door.id}'),
             InlineKeyboardButton('Закрыть', callback_data=f'door_close_{door.id}'),
             InlineKeyboardButton('Пропустить', callback_data=f'door_skip_{door.id}'),
         )
-        result.append((door_name, markup))
+        result.append((door.id, door_name, markup))
     return result
 
 
-async def send_available_doors(chat_id: int, states=None):
-    messages = await get_user_available_doors_markup(chat_id, states=states)
+async def send_available_doors(chat_id: int, update=False):
+    messages = await get_user_available_doors_markup(chat_id)
+    qs = await DoorMessage.filter(user__chat_id=chat_id)
+    door_messages = {i.door_id: i.message_id for i in qs}
     if not messages:
         await bot.send_message(chat_id, 'Извините, у вас нет прав на управление дверьми')
-    for msg, markup in messages:
-        await bot.send_message(chat_id, msg, reply_markup=markup)
+    for door_id, msg, markup in messages:
+        message_id = door_messages.get(door_id)
+        if message_id and not update:
+            await bot.delete_message(chat_id, message_id)
+            new_message = await bot.send_message(chat_id, msg, reply_markup=markup)
+            await DoorMessage.filter(
+                user_id=chat_id,
+                message_id=message_id,
+                door_id=door_id
+            ).update(message_id=new_message.message_id)
+        elif not message_id:
+            new_message = await bot.send_message(chat_id, msg, reply_markup=markup)
+            await DoorMessage.create(user_id=chat_id, message_id=new_message.message_id, door_id=door_id)
+        elif _last_state_cache.get(f'{chat_id}{door_id}', '') != msg:
+            await bot.edit_message_text(msg, chat_id, message_id, reply_markup=markup)
+        _last_state_cache[f'{chat_id}{door_id}'] = msg
 
 
 async def get_users_markup() -> Union[InlineKeyboardMarkup, None]:

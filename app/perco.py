@@ -1,32 +1,35 @@
 import json
+from asyncio import sleep
 from typing import List, Dict, Union
-from datetime import datetime, timedelta
-from app.const import OPENED, CLOSED
 
 import aiohttp
 
-from app.settings import PERCO_LOGIN, PERCO_PASS, PERCO_URL, logger
+from app.const import OPENED, CLOSED
 
 
 class PercoClient:
-    def __init__(self):
+    def __init__(self, url: str, login: str, password: str):
+        self.url = url
+        self.login = login
+        self.password = password
+        self._cookies = aiohttp.CookieJar(unsafe=True)
         self._states: Dict[int, str] = {}
-        self._updated_timestamp: int = 0
 
-    @staticmethod
-    async def _call(uri: str, data: dict) -> Union[list, dict, str]:
-        async with aiohttp.ClientSession(cookie_jar=aiohttp.CookieJar(unsafe=True)) as session:
-            async with session.post(f'{PERCO_URL}/login',
-                                    data={'LoginForm[username]': PERCO_LOGIN,
-                                          'LoginForm[password]': PERCO_PASS}
+    async def auth(self):
+        async with aiohttp.ClientSession(cookie_jar=self._cookies) as session:
+            async with session.post(f'{self.url}/login',
+                                    data={'LoginForm[username]': self.login,
+                                          'LoginForm[password]': self.password}
                                     ) as resp:
-                logger.info(f'login status: {resp.status}')
-            async with session.post(f'{PERCO_URL}{uri}', data=data) as resp:
+                pass
+
+    async def _call(self, uri: str, data: dict) -> Union[list, dict, str]:
+        async with aiohttp.ClientSession(cookie_jar=self._cookies) as session:
+            async with session.post(f'{self.url}{uri}', data=data) as resp:
                 text = await resp.text()
                 try:
                     result = json.loads(text)
                 except:
-                    logger.info(f'status: {resp.status}, text: {text}')
                     result = {}
         return result
 
@@ -56,12 +59,16 @@ class PercoClient:
     async def _update_states(self):
         states = await self._call('/js/deviceState.json.php', data={'request': 'getDeviceStateAll'})
         result = {}
-        for item in states.get('statuses', {}).values():
-            result[int(item['id'])] = OPENED if item['reader_rkd1'] == '1' else CLOSED
+        for item in states.get('status', {}).values():
+            result[int(item['id'])] = CLOSED if item['reader_rkd1'] == '1' else OPENED
         self._states = result
-        self._updated_timestamp = datetime.now().timestamp()
 
-    async def get_doors_labels(self) -> Dict[int, str]:
-        if datetime.now().timestamp() - self._updated_timestamp > 60:
-            await self._update_states()
+    @property
+    def door_states(self) -> Dict[int, str]:
         return self._states
+
+    async def states_updater_task(self):
+        await self.auth()
+        while True:
+            await self._update_states()
+            await sleep(3)

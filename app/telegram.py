@@ -1,3 +1,4 @@
+from asyncio import sleep
 from datetime import datetime, timedelta
 
 from aiogram.types import Message, CallbackQuery
@@ -7,11 +8,7 @@ from app.decorators import admin
 from app.helpers import (get_user_doors_markup, send_available_doors, get_users_markup, send_user_edit_message,
                          check_admin_user)
 from app.models import User, Door
-from app.perco import PercoClient
-from app.settings import dp, ADMIN_USERNAME, bot, logger
-from asyncio import sleep
-
-perco = PercoClient()
+from app.settings import dp, ADMIN_USERNAME, bot, logger, perco
 
 
 @dp.message_handler(commands=['start'])
@@ -86,17 +83,13 @@ async def callback_door_skip(callback_query: CallbackQuery):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_skip_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь открыта', show_alert=True)
+    await bot.answer_callback_query(
+        callback_query.id,
+        'Дверь открыта, через 8 сек закроется автоматически',
+        show_alert=True
+    )
     await sleep(8)
     await perco.close_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта', show_alert=True)
-
-
-@dp.callback_query_handler(lambda x: 'doors_refresh' == x.data)
-async def callback_doors_refresh(callback_query: CallbackQuery):
-    logger.info(f'callback data: {callback_query.data}')
-    states = await perco.get_doors_labels()
-    await bot.answer_callback_query(callback_query.id, 'данные обновлены', show_alert=True)
 
 
 @dp.callback_query_handler(lambda x: 'user_activate_' in x.data)

@@ -38,3 +38,9 @@ class User(TimestampModel):
     @property
     def full_name(self) -> str:
         return f'{self.first_name} {self.last_name}'
+
+
+class DoorMessage(TimestampModel):
+    door = fields.ForeignKeyField('models.Door', related_name='messages')
+    user = fields.ForeignKeyField('models.User', related_name='messages')
+    message_id = fields.BigIntField()

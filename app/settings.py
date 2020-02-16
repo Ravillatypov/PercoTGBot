@@ -5,6 +5,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from envparse import env
 
+from app.perco import PercoClient
+
 if isfile('.env'):
     env.read_envfile('.env')
 
@@ -41,3 +43,4 @@ else:
 
 dp = Dispatcher(bot, storage=MemoryStorage())
 
+perco = PercoClient(PERCO_URL, PERCO_LOGIN, PERCO_PASS)

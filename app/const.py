@@ -1,8 +1,10 @@
-SELECTED = '[✔️]'
-NOT_SELECTED = '[✖]'
-OPEN = '🔓'
-CLOSE = '🔐'
-SKIP = f'{OPEN} {CLOSE}'
-OPENED = f'[{OPEN}]'
-CLOSED = f'[{CLOSE}]'
-
+ACCEPT = '✅'
+DECLINE = '🚫'
+RED = '🔴'
+BLUE = '🔵'
+GREEN = '🟢'
+YELLOW = '🟡'
+SELECTED = f'[{ACCEPT}]'
+NOT_SELECTED = f'[{DECLINE}]'
+OPENED = GREEN
+CLOSED = RED
