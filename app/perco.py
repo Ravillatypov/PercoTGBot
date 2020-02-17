@@ -71,6 +71,11 @@ class PercoClient:
 
     async def states_updater_task(self):
         await self.auth()
+        counter = 0
         while True:
+            counter += 1
+            if counter > 300:
+                await self.auth()
+                counter = 0
             await self._update_states()
             await sleep(1)
