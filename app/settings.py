@@ -1,9 +1,12 @@
 import logging
 from os.path import isfile
 
+import sentry_sdk
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from envparse import env
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from app.perco import PercoClient
 
@@ -21,6 +24,13 @@ PROXY_URL = env.str('PROXY_URL', default='')
 PERCO_URL = env.str('PERCO_URL', default='')
 PERCO_LOGIN = env.str('PERCO_LOGIN', default='')
 PERCO_PASS = env.str('PERCO_PASS', default='')
+
+SENTRY_SDN = env.str('SENTRY_SDN', default='')
+if SENTRY_SDN:
+    sentry_sdk.init(
+        dsn=SENTRY_SDN,
+        integrations=[AioHttpIntegration(), LoggingIntegration()]
+    )
 
 # logging settings
 LOG_LEVEL = env.str('LOG_LEVEL', default='WARNING')
