@@ -25,10 +25,10 @@ PERCO_URL = env.str('PERCO_URL', default='')
 PERCO_LOGIN = env.str('PERCO_LOGIN', default='')
 PERCO_PASS = env.str('PERCO_PASS', default='')
 
-SENTRY_SDN = env.str('SENTRY_SDN', default='')
-if SENTRY_SDN:
+SENTRY_DSN = env.str('SENTRY_SDN', default='')
+if SENTRY_DSN:
     sentry_sdk.init(
-        dsn=SENTRY_SDN,
+        dsn=SENTRY_DSN,
         integrations=[AioHttpIntegration(), LoggingIntegration()]
     )
 
