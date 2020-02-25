@@ -8,7 +8,8 @@ from app.decorators import admin, check_permission
 from app.helpers import (get_user_doors_markup, send_available_doors, get_users_markup, send_user_edit_message,
                          check_admin_user)
 from app.models import User, Door
-from app.settings import dp, ADMIN_USERNAME, bot, logger, perco
+from app.settings import dp, ADMIN_USERNAME, logger, perco
+from app.utils import send_message, delete_message, answer_callback_query, edit_message_reply_markup
 
 
 @dp.message_handler(commands=['start'])
@@ -68,7 +69,7 @@ async def callback_door_open(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_open_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь открыта')
+    await answer_callback_query(callback_query.id, 'Дверь открыта')
 
 
 @dp.callback_query_handler(lambda x: 'door_close_' in x.data)
@@ -77,7 +78,7 @@ async def callback_door_close(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_close_', ''))
     await perco.close_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь закрыта')
+    await answer_callback_query(callback_query.id, 'Дверь закрыта')
 
 
 @dp.callback_query_handler(lambda x: 'door_skip_' in x.data)
@@ -86,7 +87,7 @@ async def callback_door_skip(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_skip_', ''))
     await perco.open_door(door_id)
-    await bot.answer_callback_query(callback_query.id, 'Дверь открыта, через 8 сек закроется автоматически')
+    await answer_callback_query(callback_query.id, 'Дверь открыта, через 8 сек закроется автоматически')
     await sleep(8)
     await perco.close_door(door_id)
 
@@ -102,11 +103,11 @@ async def callback_user_activate(callback_query: CallbackQuery, **kwargs):
         return
     user.is_active = activate == '1'
     await user.save(update_fields=['is_active'])
-    await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+    await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
 
     if user.is_active:
         markup = await get_user_doors_markup(user.chat_id, user)
-        await bot.send_message(
+        await send_message(
             callback_query.message.chat.id,
             f'Какие двери доступны для пользователя {user.full_name}?',
             reply_markup=markup
@@ -121,9 +122,9 @@ async def callback_user_door_edit(callback_query: CallbackQuery, **kwargs):
         chat_id = int(callback_query.data.replace('user_door_finished_', ''))
         user = await User.get_or_none(chat_id=chat_id)
         if user and user.updated_at and datetime.now() - user.updated_at < timedelta(minutes=5):
-            await bot.send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
+            await send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
         await send_available_doors(chat_id)
-        return await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        return await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
     chat_id, door_id, state = callback_query.data.replace('user_door_', '').split('_')
     door = await Door.get(id=int(door_id))
     user = await User.get(chat_id=int(chat_id))
@@ -132,7 +133,7 @@ async def callback_user_door_edit(callback_query: CallbackQuery, **kwargs):
     else:
         await user.doors.add(door)
     markup = await get_user_doors_markup(user.chat_id, user)
-    await bot.edit_message_reply_markup(
+    await edit_message_reply_markup(
         callback_query.message.chat.id,
         callback_query.message.message_id,
         callback_query.inline_message_id,
@@ -142,13 +143,13 @@ async def callback_user_door_edit(callback_query: CallbackQuery, **kwargs):
 
 @dp.callback_query_handler(lambda x: x.data == 'cancel')
 async def callback_cancel(callback_query: CallbackQuery):
-    await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+    await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
 
 
 @dp.callback_query_handler(lambda x: 'user_edit_' in x.data)
 @admin
 async def callback_user_edit(callback_query: CallbackQuery, **kwargs):
-    await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+    await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
     chat_id = int(callback_query.data.replace('user_edit_', ''))
     user = await User.get(chat_id=chat_id)
     await send_user_edit_message(user, settings.ADMIN_CHAT_ID)

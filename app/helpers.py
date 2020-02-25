@@ -5,7 +5,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from app import settings
 from app.const import SELECTED, NOT_SELECTED
 from app.models import User, Door, DoorMessage
-from app.settings import bot, perco
+from app.settings import perco
+from app.utils import send_message, delete_message, edit_message_text
 
 _last_state_cache = {}
 
@@ -61,22 +62,27 @@ async def send_available_doors(chat_id: int, update=False):
     qs = await DoorMessage.filter(user__chat_id=chat_id)
     door_messages = {i.door_id: i.message_id for i in qs}
     if not messages:
-        await bot.send_message(chat_id, 'Извините, у вас нет прав на управление дверьми')
+        await send_message(chat_id, 'Извините, у вас нет прав на управление дверьми')
     for door_id, msg, markup in messages:
         message_id = door_messages.get(door_id)
         if message_id and not update:
-            await bot.delete_message(chat_id, message_id)
-            new_message = await bot.send_message(chat_id, msg, reply_markup=markup)
-            await DoorMessage.filter(
-                user_id=chat_id,
-                message_id=message_id,
-                door_id=door_id
-            ).update(message_id=new_message.message_id)
+            try:
+                await delete_message(chat_id, message_id)
+            except:
+                pass
+            new_message = await send_message(chat_id, msg, reply_markup=markup)
+            if new_message:
+                await DoorMessage.filter(
+                    user_id=chat_id,
+                    message_id=message_id,
+                    door_id=door_id
+                ).update(message_id=new_message.message_id)
         elif not message_id:
-            new_message = await bot.send_message(chat_id, msg, reply_markup=markup)
-            await DoorMessage.create(user_id=chat_id, message_id=new_message.message_id, door_id=door_id)
+            new_message = await send_message(chat_id, msg, reply_markup=markup)
+            if new_message:
+                await DoorMessage.create(user_id=chat_id, message_id=new_message.message_id, door_id=door_id)
         elif _last_state_cache.get(f'{chat_id}{door_id}', '') != msg:
-            await bot.edit_message_text(msg, chat_id, message_id, reply_markup=markup)
+            await edit_message_text(msg, chat_id, message_id, reply_markup=markup)
         _last_state_cache[f'{chat_id}{door_id}'] = msg
 
 
@@ -104,7 +110,7 @@ async def send_user_edit_message(user: User, admin_chat_id: int, is_new=False):
     if is_new:
         msg = 'Новый пользователь: '
     username = f' - @{user.username}' if user.username else ''
-    await bot.send_message(
+    await send_message(
         admin_chat_id,
         f'{msg}{user.full_name} {username}\n',
         reply_markup=markup

@@ -1,7 +1,8 @@
 from aiogram.types import Message, CallbackQuery
 
 from app.models import User
-from app.settings import ADMIN_USERNAME, logger, bot
+from app.settings import ADMIN_USERNAME, logger
+from app.utils import delete_message
 
 
 def admin(func):
@@ -26,6 +27,6 @@ def check_permission(func):
             *_, door_id = callback.data.split('_')
             user_doors = await User.filter(chat_id=callback.message.chat.id).values_list('doors__id', flat=True)
             if int(door_id) not in user_doors:
-                return await bot.delete_message(callback.message.chat.id, callback.message.message_id)
+                return await delete_message(callback.message.chat.id, callback.message.message_id)
         return await func(*args, **kwargs)
     return wrapper
