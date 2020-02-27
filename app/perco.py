@@ -79,3 +79,12 @@ class PercoClient:
                 counter = 0
             await self._update_states()
             await sleep(1)
+
+    async def door_is_closed(self, door_id: int) -> Union[bool, None]:
+        states = await self._call('/js/deviceState.json.php', data={'request': 'getDeviceStateAll'})
+        result = None
+        for item in states.get('status', {}).values():
+            if door_id == int(item['id']):
+                result = item['reader_rkd1'] == '1'
+                break
+        return result
