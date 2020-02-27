@@ -69,7 +69,14 @@ async def callback_door_open(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_open_', ''))
     await perco.open_door(door_id)
-    await answer_callback_query(callback_query.id, 'Дверь открыта')
+    is_closed = await perco.door_is_closed(door_id)
+    if is_closed is None:
+        message = 'Не удалось подключиться к Perco-WEB'
+    elif is_closed:
+        message = 'Не удалось открыть'
+    else:
+        message = 'Дверь открыта'
+    await answer_callback_query(callback_query.id, message)
 
 
 @dp.callback_query_handler(lambda x: 'door_close_' in x.data)
@@ -78,7 +85,14 @@ async def callback_door_close(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     door_id = int(callback_query.data.replace('door_close_', ''))
     await perco.close_door(door_id)
-    await answer_callback_query(callback_query.id, 'Дверь закрыта')
+    is_closed = await perco.door_is_closed(door_id)
+    if is_closed is None:
+        message = 'Не удалось подключиться к Perco-WEB'
+    elif is_closed:
+        message = 'Дверь закрыта'
+    else:
+        message = 'Не удалось закрыта'
+    await answer_callback_query(callback_query.id, message)
 
 
 @dp.callback_query_handler(lambda x: 'door_skip_' in x.data)
