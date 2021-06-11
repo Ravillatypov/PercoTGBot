@@ -1,74 +1,21 @@
 from asyncio import sleep
 from datetime import datetime, timedelta
 
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
 
 from app import settings
 from app.decorators import admin, check_permission
-from app.helpers import (get_user_doors_markup, send_available_doors, get_users_markup, send_user_edit_message,
-                         check_admin_user)
+from app.helpers import (get_user_doors_markup, send_available_doors, send_user_edit_message)
 from app.models import User, Door
-from app.settings import dp, ADMIN_USERNAME, logger
-from app.utils import send_message, delete_message, answer_callback_query, edit_message_reply_markup
-
-
-@dp.message_handler(commands=['start'])
-async def start(message: Message):
-    await check_admin_user()
-    user, created = await User.get_or_create(
-        chat_id=message.chat.id,
-        defaults={
-            'username': message.chat.username or '',
-            'first_name': message.chat.first_name or '',
-            'last_name': message.chat.last_name or '',
-            'is_active': message.chat.username == ADMIN_USERNAME or None
-        }
-    )
-    if user.is_active:
-        return await message.reply(f'С возвращением {user.full_name}!')
-    msg = 'Я Perco-бот! Могу для вас открыть или закрыть дверь.\n'
-    if message.chat.username == ADMIN_USERNAME:
-        msg += 'Вы администратор, поздавляю!'
-    else:
-        msg += 'Ваш запрос ожидает подтверждения администратором.'
-        if settings.ADMIN_CHAT_ID:
-            await send_user_edit_message(user, settings.ADMIN_CHAT_ID, is_new=True)
-    await message.reply(msg)
-
-
-@dp.message_handler(commands=['updateDoors'])
-@admin
-async def update_doors(message: Message, **kwargs):
-    perco = dp['perco']
-    doors = await perco.get_doors()
-    for data in doors:
-        door, _ = await Door.get_or_create(id=data.get('id', 0), defaults={'name': data.get('name', '-')})
-        if door.name != data.get('name', '-'):
-            door.name = data.get('name', '-')
-            await door.save(update_fields=['name'])
-    await message.reply('Обновил')
-
-
-@dp.message_handler(commands=['doors'])
-async def get_doors(message: Message):
-    await send_available_doors(message.chat.id, dp['perco'])
-
-
-@dp.message_handler(commands=['users'])
-@admin
-async def get_users(message: Message, **kwargs):
-    markup = await get_users_markup()
-    if markup:
-        await message.reply('Список пользователей:', reply_markup=markup)
-    else:
-        await message.reply('На данный момент вы единственный пользователь')
+from app.settings import dp, logger
+from app.utils import send_message, delete_message, answer_callback_query, edit_message_reply_markup, get_int
 
 
 @dp.callback_query_handler(lambda x: 'door_open_' in x.data)
 @check_permission
 async def callback_door_open(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
-    door_id = int(callback_query.data.replace('door_open_', ''))
+    door_id = get_int(callback_query.data.replace('door_open_', ''))
     perco = dp['perco']
     await perco.open_door(door_id)
     is_closed = await perco.door_is_closed(door_id)
@@ -85,7 +32,7 @@ async def callback_door_open(callback_query: CallbackQuery, **kwargs):
 @check_permission
 async def callback_door_close(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
-    door_id = int(callback_query.data.replace('door_close_', ''))
+    door_id = get_int(callback_query.data.replace('door_close_', ''))
     perco = dp['perco']
     await perco.close_door(door_id)
     is_closed = await perco.door_is_closed(door_id)
@@ -102,7 +49,7 @@ async def callback_door_close(callback_query: CallbackQuery, **kwargs):
 @check_permission
 async def callback_door_skip(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
-    door_id = int(callback_query.data.replace('door_skip_', ''))
+    door_id = get_int(callback_query.data.replace('door_skip_', ''))
     perco = dp['perco']
     await perco.open_door(door_id)
     await answer_callback_query(callback_query.id, 'Дверь открыта, через 8 сек закроется автоматически')
@@ -115,7 +62,7 @@ async def callback_door_skip(callback_query: CallbackQuery, **kwargs):
 async def callback_user_activate(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     chat_id, activate = callback_query.data.replace('user_activate_', '').split('_')
-    user = await User.get_or_none(chat_id=int(chat_id))
+    user = await User.get_or_none(chat_id=get_int(chat_id))
     if not user:
         logger.warning(f'bad callback data: {callback_query.data}')
         return
@@ -137,19 +84,17 @@ async def callback_user_activate(callback_query: CallbackQuery, **kwargs):
 async def callback_user_door_edit(callback_query: CallbackQuery, **kwargs):
     logger.info(f'callback data: {callback_query.data}')
     if 'finished' in callback_query.data:
-        chat_id = int(callback_query.data.replace('user_door_finished_', ''))
-        user = await User.get_or_none(chat_id=chat_id)
-        if user and user.updated_at and datetime.now() - user.updated_at < timedelta(minutes=5):
-            await send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
-        await send_available_doors(chat_id, dp['perco'])
-        return await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        return await callback_user_door_edit_finished(callback_query, **kwargs)
+
     chat_id, door_id, state = callback_query.data.replace('user_door_', '').split('_')
-    door = await Door.get(id=int(door_id))
-    user = await User.get(chat_id=int(chat_id))
+    door = await Door.get(id=get_int(door_id))
+    user = await User.get(chat_id=get_int(chat_id))
+
     if state == '0':
         await user.doors.remove(door)
     else:
         await user.doors.add(door)
+
     markup = await get_user_doors_markup(user.chat_id, user)
     await edit_message_reply_markup(
         callback_query.message.chat.id,
@@ -157,6 +102,17 @@ async def callback_user_door_edit(callback_query: CallbackQuery, **kwargs):
         callback_query.inline_message_id,
         markup
     )
+
+
+async def callback_user_door_edit_finished(callback_query: CallbackQuery, **kwargs):
+    chat_id = get_int(callback_query.data.replace('user_door_finished_', ''))
+    user = await User.get_or_none(chat_id=chat_id)
+
+    if user and user.updated_at and datetime.utcnow() - user.updated_at < timedelta(minutes=5):
+        await send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
+
+    await send_available_doors(chat_id, dp['perco'])
+    return await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
 
 
 @dp.callback_query_handler(lambda x: x.data == 'cancel')
@@ -168,6 +124,6 @@ async def callback_cancel(callback_query: CallbackQuery):
 @admin
 async def callback_user_edit(callback_query: CallbackQuery, **kwargs):
     await delete_message(callback_query.message.chat.id, callback_query.message.message_id)
-    chat_id = int(callback_query.data.replace('user_edit_', ''))
+    chat_id = get_int(callback_query.data.replace('user_edit_', ''))
     user = await User.get(chat_id=chat_id)
     await send_user_edit_message(user, settings.ADMIN_CHAT_ID)

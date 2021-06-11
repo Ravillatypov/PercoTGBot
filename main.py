@@ -9,7 +9,7 @@ from app.helpers import check_admin_user
 from app.perco import PercoClient
 from app.settings import WEBHOOK_HOST, WEBHOOK_PATH, PERCO_PASS, PERCO_LOGIN, PERCO_URL, WEB_PORT
 from app.tasks import update_messages
-from app.telegram import dp
+from app.handlers import dp
 
 
 async def on_startup(dispatcher: Dispatcher):

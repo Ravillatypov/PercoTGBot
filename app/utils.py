@@ -80,3 +80,10 @@ async def edit_message_reply_markup(chat_id: typing.Union[int, str, None] = None
         return False
     else:
         return res
+
+
+def get_int(val) -> int:
+    try:
+        return int(val)
+    except:
+        return 0
