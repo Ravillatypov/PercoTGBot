@@ -108,7 +108,7 @@ async def callback_user_door_edit_finished(callback_query: CallbackQuery, **kwar
     chat_id = get_int(callback_query.data.replace('user_door_finished_', ''))
     user = await User.get_or_none(chat_id=chat_id)
 
-    if user and user.updated_at and datetime.utcnow() - user.updated_at < timedelta(minutes=5):
+    if user and user.updated_at and datetime.utcnow() - user.updated_at.replace(tzinfo=None) < timedelta(minutes=5):
         await send_message(chat_id, 'Поздравляю, ваша учетная запись активирована!')
 
     await send_available_doors(chat_id, dp['perco'])
