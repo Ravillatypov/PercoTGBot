@@ -71,10 +71,13 @@ class PercoClient:
         )
 
     async def _update_states(self):
+        logger.info('update states started')
         states = await self._call('/js/deviceState.json.php', data={'request': 'getDeviceStateAll'})
         result = {}
+
         for item in states.get('status', {}).values():
             result[int(item['id'])] = CLOSED if item['reader_rkd1'] == '1' else OPENED
+
         self.last_updated = [k for k, v in result.items() if self._states.get(k, '') != v]
         self._states = result
 

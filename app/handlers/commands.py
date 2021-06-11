@@ -64,18 +64,16 @@ async def get_users(message: Message, **kwargs):
 @dp.message_handler(commands=['force_update_doors'])
 @admin
 async def force_update_doors(message: Message, **kwargs):
-    users = await User.all()
+    chats = await User.all().values_list('chat_id', flat=True)
 
     errors = []
     success = 0
 
-    for user in users:
+    for chat_id in chats:
         try:
-            await send_available_doors(user.chat_id, dp['perco'])
-        except (exceptions.BotBlocked, exceptions.ChatNotFound, exceptions.UserDeactivated):
-            await user.delete()
+            await send_available_doors(chat_id, dp['perco'])
         except Exception as e:
-            logger.warning(f'cant update doors for user={user}, error="{e}"')
+            logger.warning(f'cant update doors for chat_id={chat_id}, error="{e}"')
             errors.append(f'"{e}"')
 
     fail = len(errors)
