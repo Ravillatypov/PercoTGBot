@@ -65,6 +65,9 @@ async def edit_message_text(text: str,
             text, chat_id, message_id, inline_message_id, parse_mode, disable_web_page_preview, reply_markup
         )
 
+        if reply_markup and res:
+            await bot.edit_message_reply_markup(chat_id, res.message_id, reply_markup=reply_markup)
+
     except MessageNotModified:
         pass
 
@@ -85,9 +88,14 @@ async def edit_message_reply_markup(chat_id: typing.Union[int, str, None] = None
                                     reply_markup: typing.Union[InlineKeyboardMarkup, None] = None) -> bool:
     try:
         res = await bot.edit_message_reply_markup(chat_id, message_id, inline_message_id, reply_markup)
+
+    except (BotKicked, BotBlocked, ChatNotFound):
+        await User.all().filter(chat_id=chat_id).delete()
+
     except Exception as err:
         logger.error(f'Error on edit_message_reply_markup: {err}', exc_info=True, stack_info=True)
         return False
+
     else:
         return res
 
