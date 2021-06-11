@@ -5,6 +5,7 @@ from typing import List, Dict, Union
 import aiohttp
 
 from app.const import OPENED, CLOSED
+from app.settings import logger
 
 
 class PercoClient:
@@ -18,19 +19,31 @@ class PercoClient:
 
     async def auth(self):
         async with aiohttp.ClientSession(cookie_jar=self._cookies) as session:
-            async with session.post(f'{self.url}/login',
-                                    data={'LoginForm[username]': self.login,
-                                          'LoginForm[password]': self.password}
-                                    ) as resp:
+            async with session.post(
+                    f'{self.url}/login',
+                    data={
+                        'LoginForm[username]': self.login,
+                        'LoginForm[password]': self.password,
+                    }
+            ):
                 pass
 
+    async def is_auth(self) -> bool:
+        async with aiohttp.ClientSession(cookie_jar=self._cookies) as session:
+            async with session.get(f'{self.url}', allow_redirects=False) as resp:
+                location = resp.headers.get('Location', '')
+                result = '/personal/staff' in location
+        return result
+
     async def _call(self, uri: str, data: dict) -> Union[list, dict, str]:
+        if not await self.is_auth():
+            await self.auth()
         async with aiohttp.ClientSession(cookie_jar=self._cookies) as session:
             async with session.post(f'{self.url}{uri}', data=data) as resp:
                 text = await resp.text()
                 try:
                     result = json.loads(text)
-                except:
+                except Exception:
                     result = {}
         return result
 
@@ -70,21 +83,13 @@ class PercoClient:
         return self._states
 
     async def states_updater_task(self):
-        await self.auth()
-        counter = 0
+        logger.info('Update door states is started')
         while True:
-            counter += 1
-            if counter > 300:
-                await self.auth()
-                counter = 0
             await self._update_states()
-            await sleep(1)
+            await sleep(0.7)
 
     async def door_is_closed(self, door_id: int) -> Union[bool, None]:
-        states = await self._call('/js/deviceState.json.php', data={'request': 'getDeviceStateAll'})
-        result = None
-        for item in states.get('status', {}).values():
-            if door_id == int(item['id']):
-                result = item['reader_rkd1'] == '1'
-                break
-        return result
+        await sleep(1.6)
+        state = self._states.get(door_id, '')
+        if state:
+            return state == CLOSED

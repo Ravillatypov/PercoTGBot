@@ -1,4 +1,5 @@
-.env
-.git
-.idea
-.vscode
+*
+!app
+!Dockerfile
+!main.py
+!requirements.txt

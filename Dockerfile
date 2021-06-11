@@ -2,6 +2,7 @@ FROM python:3.8-alpine
 
 RUN mkdir /db
 VOLUME /db
+EXPOSE 8976
 
 COPY requirements.txt ./
 

@@ -8,8 +8,6 @@ from envparse import env
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-from app.perco import PercoClient
-
 if isfile('.env'):
     env.read_envfile('.env')
 
@@ -25,12 +23,6 @@ PERCO_URL = env.str('PERCO_URL', default='')
 PERCO_LOGIN = env.str('PERCO_LOGIN', default='')
 PERCO_PASS = env.str('PERCO_PASS', default='')
 
-SENTRY_DSN = env.str('SENTRY_SDN', default='')
-if SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[AioHttpIntegration(), LoggingIntegration()]
-    )
 
 # logging settings
 LOG_LEVEL = env.str('LOG_LEVEL', default='WARNING')
@@ -45,6 +37,10 @@ logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
 # ----------------
 
+SENTRY_DSN = env.str('SENTRY_SDN', default='')
+if SENTRY_DSN:
+    sentry_sdk.init(dsn=SENTRY_DSN)
+
 # Initialize bot and dispatcher
 if PROXY_URL:
     bot = Bot(token=API_TOKEN, proxy=PROXY_URL)
@@ -53,4 +49,8 @@ else:
 
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-perco = PercoClient(PERCO_URL, PERCO_LOGIN, PERCO_PASS)
+WEBHOOK_HOST = env.str('WEBHOOK_HOST', default='')
+WEBHOOK_PATH = env.str('WEBHOOK_PATH', default='/api')
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+
+WEB_PORT = env.int('WEB_PORT', default=8976)
