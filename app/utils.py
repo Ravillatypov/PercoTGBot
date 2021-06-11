@@ -1,8 +1,9 @@
 import typing
 
 from aiogram.types import Message, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, ForceReply
-from aiogram.utils.exceptions import MessageNotModified
+from aiogram.utils.exceptions import MessageNotModified, BotBlocked, BotKicked, ChatNotFound
 
+from app.models import User
 from app.settings import bot, logger
 
 
@@ -28,6 +29,9 @@ async def send_message(chat_id: int, text: str,
 
         if reply_markup and res:
             await bot.edit_message_reply_markup(chat_id, res.message_id, reply_markup=reply_markup)
+
+    except (BotKicked, BotBlocked, ChatNotFound):
+        await User.all().filter(chat_id=chat_id).delete()
 
     except Exception as err:
         logger.error(f'Error on send message: {err}', exc_info=True, stack_info=True)
@@ -60,11 +64,17 @@ async def edit_message_text(text: str,
         res = await bot.edit_message_text(
             text, chat_id, message_id, inline_message_id, parse_mode, disable_web_page_preview, reply_markup
         )
+
     except MessageNotModified:
         pass
+
+    except (BotKicked, BotBlocked, ChatNotFound):
+        await User.all().filter(chat_id=chat_id).delete()
+
     except Exception as err:
         logger.error(f'Error on edit_message_text: {err}', exc_info=True, stack_info=True)
         return False
+
     else:
         return res
 

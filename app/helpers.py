@@ -87,7 +87,7 @@ async def send_available_doors(chat_id: int, perco: PercoClient, update=False):
                 await DoorMessage.create(user_id=chat_id, message_id=new_message.message_id, door_id=door_id)
 
         elif _last_state_cache.get(f'{chat_id}{door_id}', '') != msg and \
-                not await edit_message_text(msg, chat_id, message_id):
+                not await edit_message_text(msg, chat_id, message_id, reply_markup=markup):
 
             new_message = await send_message(chat_id, msg, reply_markup=markup)
             await DoorMessage.filter(user_id=chat_id, door_id=door_id).delete()
