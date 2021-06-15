@@ -20,6 +20,7 @@ async def on_startup(dispatcher: Dispatcher):
     dispatcher['perco'] = perco
     dispatcher['tasks'] = []
     dispatcher['tasks'].append(ensure_future(perco.states_updater_task()))
+    dispatcher['tasks'].append(ensure_future(perco.check_events()))
     dispatcher['tasks'].append(ensure_future(update_messages(perco)))
 
 
