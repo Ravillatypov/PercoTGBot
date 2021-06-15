@@ -1,5 +1,7 @@
 *
 !app
+**/*.pyc
+**/__pycache__
 !Dockerfile
 !main.py
 !requirements.txt
