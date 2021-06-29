@@ -5,8 +5,6 @@ import sentry_sdk
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from envparse import env
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
 
 if isfile('.env'):
     env.read_envfile('.env')
@@ -35,9 +33,11 @@ stream.setFormatter(formatter)
 
 logger = logging.getLogger()
 logger.setLevel(LOG_LEVEL)
+logger.handlers = []
+logger.addHandler(stream)
 # ----------------
 
-SENTRY_DSN = env.str('SENTRY_SDN', default='')
+SENTRY_DSN = env.str('SENTRY_DSN', default='')
 if SENTRY_DSN:
     sentry_sdk.init(dsn=SENTRY_DSN)
 

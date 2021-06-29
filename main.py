@@ -8,7 +8,7 @@ from app import settings
 from app.helpers import check_admin_user
 from app.perco import PercoClient
 from app.settings import WEBHOOK_HOST, WEBHOOK_PATH, PERCO_PASS, PERCO_LOGIN, PERCO_URL, WEB_PORT
-from app.tasks import update_messages
+from app.tasks import update_messages, force_update_doors_on_chat
 from app.handlers import dp
 
 
@@ -22,6 +22,7 @@ async def on_startup(dispatcher: Dispatcher):
     dispatcher['tasks'].append(ensure_future(perco.states_updater_task()))
     dispatcher['tasks'].append(ensure_future(perco.check_events()))
     dispatcher['tasks'].append(ensure_future(update_messages(perco)))
+    dispatcher['tasks'].append(ensure_future(force_update_doors_on_chat(perco)))
 
 
 async def on_shutdown(dispatcher: Dispatcher):
